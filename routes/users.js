@@ -2,7 +2,7 @@ var express = require("express");
 var router = express.Router();
 const bcrypt = require("bcrypt");
 var Users = require("../models/users");
-const { generateToken } = require("../middlewares/jwtAuth");
+const { generateToken, verifyToken } = require("../middlewares/jwtAuth");
 
 router.post("/signup", async (req, res) => {
   console.log(req.body);
@@ -24,7 +24,7 @@ router.post("/signup", async (req, res) => {
   const { uID, token } = generateToken(username);
   await new Users({
     username: username,
-    hashedPassword: bcrypt.hashSync(password, 10),
+    hashedPassword: bcrypt.hashSync(username + password, 10),
     uID,
   }).save();
 
@@ -51,7 +51,10 @@ router.post("/signin", async (req, res) => {
     return;
   }
   console.log(clientUser);
-  const valid = bcrypt.compareSync(password, clientUser.hashedPassword);
+  const valid = bcrypt.compareSync(
+    username + password,
+    clientUser.hashedPassword
+  );
   if (!valid) {
     res
       .status(400)
@@ -66,5 +69,25 @@ router.post("/signin", async (req, res) => {
     message: "Succesfully signed-in !",
   });
 });
+
+router.post("/renew", verifyToken, (req, res) => {
+  const { uID, username } = req.body;
+  const token = generateToken(username, uID);
+  res.json({
+    result: true,
+    data: { username, token },
+    message: "Token renewed",
+  });
+});
+
+router.post("/validate", verifyToken, (req, res) => {
+  const { username, token } = req.body;
+  res.json({
+    result: true,
+    data: { username, token },
+    message: "Token valid",
+  });
+});
+
 
 module.exports = router;
