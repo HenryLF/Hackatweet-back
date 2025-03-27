@@ -4,7 +4,10 @@ const { verifyToken } = require("../middlewares/jwtAuth");
 var router = express.Router();
 
 router.get("/", async (req, res) => {
-  const tweets = await Tweets.find({}).populate({
+  const tweets = await Tweets.find({}, null, {
+    sort: { createdAt: -1 },
+    limit: 50,
+  }).populate({
     path: "likedBy",
     select: "username uID -_id",
   });
@@ -12,7 +15,30 @@ router.get("/", async (req, res) => {
   res.json({
     result: true,
     data: tweets,
+    message: "Here are some brainrot you twitos.",
+  });
+});
 
+router.get("/:hashtags", async (req, res) => {
+  console.log(req.params.hashtags.split(","));
+  const tweets = await Tweets.find(
+    {
+      $expr: {
+        $setIsSubset: [req.params.hashtags.split(","), "$hashtags"],
+      },
+    },
+    null,
+    {
+      sort: { createdAt: -1 },
+    }
+  ).populate({
+    path: "likedBy",
+    select: "username uID -_id",
+  });
+
+  res.json({
+    result: true,
+    data: tweets,
     message: "Here are some brainrot you twitos.",
   });
 });
@@ -64,7 +90,7 @@ router.post("/new", verifyToken, async (req, res) => {
   res.json({ result: true, data: newTweet, message: "Tweet Posted" });
 });
 
-router.post("/like", verifyToken, async (req, res) => {
+router.put("/like", verifyToken, async (req, res) => {
   const { tweetID, mongoID } = req.body;
 
   let update = await Tweets.updateOne(
@@ -77,7 +103,7 @@ router.post("/like", verifyToken, async (req, res) => {
     : res.json({ result: false, message: `Something went wrong...` });
 });
 
-router.post("/unlike", verifyToken, async (req, res) => {
+router.put("/unlike", verifyToken, async (req, res) => {
   const { mongoID, tweetID } = req.body;
 
   let update = await Tweets.updateOne(
