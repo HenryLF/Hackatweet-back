@@ -3,72 +3,86 @@ var router = express.Router();
 const bcrypt = require("bcrypt");
 var Users = require("../models/users");
 const { generateToken, verifyToken } = require("../middlewares/jwtAuth");
+const trimBodyFields = require("../middlewares/trimField");
 
-router.post("/signup", async (req, res) => {
-  console.log(req.body);
-  const { username, password } = req.body;
-  if (!username || !password) {
-    res
-      .status(400)
-      .json({ result: false, message: "Invalid query, missing fields." });
-    return;
+router.post(
+  "/signup",
+  trimBodyFields("username", "password"),
+  async (req, res) => {
+    console.log(req.body);
+    const { username, password } = req.body;
+    if (
+      !username ||
+      !password ||
+      username.length > 32 ||
+      !password.match(/^(?=.*?[A-Z\d])[a-zA-Z\d]{8,}$/)
+    ) {
+      res
+        .status(400)
+        .json({ result: false, message: "Invalid query, missing fields." });
+      return;
+    }
+    const userExists = await Users.exists({ username });
+    if (userExists) {
+      res
+        .status(400)
+        .json({ result: false, message: "Username allready exists." });
+      return;
+    }
+
+    const { uID, token } = generateToken(username);
+    await new Users({
+      username: username,
+      hashedPassword: bcrypt.hashSync(username + password, 10),
+      uID,
+    }).save();
+
+    res.json({
+      result: true,
+      data: { username, token },
+      message: "Succesfully signed-up !",
+    });
   }
-  const userExists = await Users.exists({ username });
-  if (userExists) {
-    res
-      .status(400)
-      .json({ result: false, message: "Username allready exists." });
-    return;
+);
+
+router.post(
+  "/signin",
+  trimBodyFields("username", "password"),
+  async (req, res) => {
+    console.log(req.body);
+    const { username, password } = req.body;
+    if (!username || !password) {
+      res
+        .status(400)
+        .json({ result: false, message: "Invalid query, missing fields." });
+      return;
+    }
+
+    const clientUser = await Users.findOne({ username });
+    if (!clientUser) {
+      res.status(400).json({ result: false, message: "User not found." });
+      return;
+    }
+    console.log(clientUser);
+    const valid = bcrypt.compareSync(
+      username + password,
+      clientUser.hashedPassword
+    );
+    if (!valid) {
+      res
+        .status(400)
+        .json({ result: false, message: "Wrong password/username." });
+      return;
+    }
+
+    const { token } = generateToken(clientUser.username, clientUser.uID);
+    res.json({
+      result: true,
+      data: { username, token },
+      message: "Succesfully signed-in !",
+    });
   }
-
-  const { uID, token } = generateToken(username);
-  await new Users({
-    username: username,
-    hashedPassword: bcrypt.hashSync(username + password, 10),
-    uID,
-  }).save();
-
-  res.json({
-    result: true,
-    data: { username, token },
-    message: "Succesfully signed-up !",
-  });
-});
-
-router.post("/signin", async (req, res) => {
-  console.log(req.body);
-  const { username, password } = req.body;
-  if (!username || !password) {
-    res
-      .status(400)
-      .json({ result: false, message: "Invalid query, missing fields." });
-    return;
-  }
-
-  const clientUser = await Users.findOne({ username });
-  if (!clientUser) {
-    res.status(400).json({ result: false, message: "User not found." });
-    return;
-  }
-  console.log(clientUser);
-  const valid = bcrypt.compareSync(
-    username + password,
-    clientUser.hashedPassword
-  );
-  if (!valid) {
-    res
-      .status(400)
-      .json({ result: false, message: "Wrong password/username." });
-    return;
-  }
-
-  const { token } = generateToken(clientUser.username, clientUser.uID);
-  res.json({
-    result: true,
-    data: { username, token },
-    message: "Succesfully signed-in !",
-  });
-});
+);
 
 router.post("/renew", verifyToken, (req, res) => {
   const { uID, username } = req.body;
@@ -88,6 +102,5 @@ router.post("/validate", verifyToken, (req, res) => {
     message: "Token valid",
   });
 });
-
 
 module.exports = router;
