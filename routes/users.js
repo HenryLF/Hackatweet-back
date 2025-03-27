@@ -4,7 +4,6 @@ const bcrypt = require("bcrypt");
 var Users = require("../models/users");
 const { generateToken } = require("../middlewares/jwtAuth");
 
-const SECRET_SALT = process.env.SECRET_SALT;
 
 router.post("/signup", async (req, res) => {
   console.log(req.body);
