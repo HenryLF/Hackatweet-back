@@ -1,11 +1,9 @@
 var express = require("express");
 var router = express.Router();
 const bcrypt = require("bcrypt");
-const uid = require("uid2");
-const jwt = require("jsonwebtoken");
 var Users = require("../models/users");
+const { generateToken } = require("../middlewares/jwtAuth");
 
-const SECRET_SALT = process.env.SECRET_SALT;
 
 router.post("/signup", async (req, res) => {
   console.log(req.body);
@@ -24,14 +22,12 @@ router.post("/signup", async (req, res) => {
     return;
   }
 
-  const uID = uid(32);
+  const {uID, token} = generateToken(username);
   await new Users({
     username: username,
     hashedPassword: bcrypt.hashSync(password, 10),
     uID,
   }).save();
-
-  const token = jwt.sign({ username, uID }, SECRET_SALT);
 
   res.json({
     result: true,
@@ -63,7 +59,7 @@ router.post("/signin", async (req, res) => {
     return;
   }
 
-  const token = jwt.sign({ username : clientUser.username, uID : clientUser.uID }, SECRET_SALT);
+  const {token} = generateToken(clientUser.username, clientUser.uID );
   res.json({
     result: true,
     data: { username, token },
