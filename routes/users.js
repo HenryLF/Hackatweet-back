@@ -4,7 +4,6 @@ const bcrypt = require("bcrypt");
 var Users = require("../models/users");
 const { generateToken } = require("../middlewares/jwtAuth");
 
-
 router.post("/signup", async (req, res) => {
   console.log(req.body);
   const { username, password } = req.body;
@@ -22,7 +21,7 @@ router.post("/signup", async (req, res) => {
     return;
   }
 
-  const {uID, token} = generateToken(username);
+  const { uID, token } = generateToken(username);
   await new Users({
     username: username,
     hashedPassword: bcrypt.hashSync(password, 10),
@@ -37,6 +36,7 @@ router.post("/signup", async (req, res) => {
 });
 
 router.post("/signin", async (req, res) => {
+  console.log(req.body);
   const { username, password } = req.body;
   if (!username || !password) {
     res
@@ -50,7 +50,7 @@ router.post("/signin", async (req, res) => {
     res.status(400).json({ result: false, message: "User not found." });
     return;
   }
-  console.log(clientUser)
+  console.log(clientUser);
   const valid = bcrypt.compareSync(password, clientUser.hashedPassword);
   if (!valid) {
     res
@@ -59,7 +59,7 @@ router.post("/signin", async (req, res) => {
     return;
   }
 
-  const {token} = generateToken(clientUser.username, clientUser.uID );
+  const { token } = generateToken(clientUser.username, clientUser.uID);
   res.json({
     result: true,
     data: { username, token },
