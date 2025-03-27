@@ -4,8 +4,8 @@ const Users = require("../models/users");
 
 const SECRET_SALT = process.env.SECRET_SALT;
 
-function generateToken(username) {
-  const uID = uid(32);
+function generateToken(username, uID = null) {
+  !uID ? (uID = uid(32)) : null;
   return { uID, token: jwt.sign({ username, uID }, SECRET_SALT) };
 }
 
@@ -33,4 +33,4 @@ async function verifyToken(req, res, next) {
   }
 }
 
-module.exports = {verifyToken , generateToken}
+module.exports = { verifyToken, generateToken };

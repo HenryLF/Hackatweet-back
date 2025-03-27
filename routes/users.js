@@ -1,7 +1,6 @@
 var express = require("express");
 var router = express.Router();
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
 var Users = require("../models/users");
 const { generateToken } = require("../middlewares/jwtAuth");
 
@@ -61,7 +60,7 @@ router.post("/signin", async (req, res) => {
     return;
   }
 
-  const token = jwt.sign({ username : clientUser.username, uID : clientUser.uID }, SECRET_SALT);
+  const {token} = generateToken(clientUser.username, clientUser.uID );
   res.json({
     result: true,
     data: { username, token },
