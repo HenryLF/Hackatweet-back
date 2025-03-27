@@ -6,7 +6,12 @@ const SECRET_SALT = process.env.SECRET_SALT;
 
 function generateToken(username, uID = null) {
   !uID ? (uID = uid(32)) : null;
-  return { uID, token: jwt.sign({ username, uID }, SECRET_SALT) };
+  return {
+    uID,
+    token: jwt.sign({ username, uID, date: Date.now() }, SECRET_SALT, {
+      expiresIn: "1h",
+    }),
+  };
 }
 
 async function verifyToken(req, res, next) {
@@ -17,6 +22,7 @@ async function verifyToken(req, res, next) {
       .json({ result: false, message: "No user token, are you connected ?" });
     return;
   }
+  console.log(req.body);
   try {
     let decoded = jwt.verify(token, SECRET_SALT);
     req.body.username = decoded.username;
@@ -24,7 +30,6 @@ async function verifyToken(req, res, next) {
     req.body.mongoID = await Users.findOne({ uID: decoded.uID }).then(
       (r) => r._id
     );
-    console.log(req.body);
     next();
   } catch (e) {
     console.log(e);
