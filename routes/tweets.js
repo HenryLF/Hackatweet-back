@@ -46,25 +46,29 @@ router.get("hash/:hashtags", async (req, res) => {
 router.get("/trends", async (req, res) => {
   const trends = await Tweets.aggregate([
     {
-      '$unwind': {
-        'path': '$hashtags'
-      }
-    }, {
-      '$group': {
-        '_id': '$hashtags', 
-        'count': {
-          '$sum': 1
-        }
-      }
-    }, {
-      '$addFields': {
-        'hashtag': '$_id'
-      }
-    }, {
-      '$sort': {
-        'count': -1
-      }
-    }
+      $unwind: {
+        path: "$hashtags",
+      },
+    },
+    {
+      $group: {
+        _id: "$hashtags",
+        count: {
+          $sum: 1,
+        },
+      },
+    },
+    {
+      $addFields: {
+        hashtag: "$_id",
+      },
+    },
+    {
+      $sort: {
+        count: -1,
+        hashtag: 1,
+      },
+    },
   ]);
   res.json({
     result: true,
