@@ -19,7 +19,7 @@ router.get("/", async (req, res) => {
   });
 });
 
-router.get("/:hashtags", async (req, res) => {
+router.get("hash/:hashtags", async (req, res) => {
   console.log(req.params.hashtags.split(","));
   const tweets = await Tweets.find(
     {
@@ -64,6 +64,7 @@ router.get("/trends", async (req, res) => {
       },
     },
   ]);
+  console.log("trends")
   res.json({
     result: true,
     data: trends,
